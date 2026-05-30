@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DayaMath Siswa v12 - Empat Aktivitas Guru</title>
+<title>DayaMath Siswa v12 - Empat Aktivitas Guru (Unduh Diperbaiki)</title>
 <style>
 :root {
   --bg:#f6f8fc;
@@ -655,8 +655,7 @@ function aiReadyNote() {
 "Jawaban sebangun/tidak: "+(val("unAnswer")||"(belum memilih)")+" | Kunci: Ya | Status: "+mark(val("unAnswer")==="Ya")+"\n"+
 "Strategi yang dipilih siswa: "+(val("unStrategy")||"(belum memilih)")+" | Kunci: mencari sudut yang belum diketahui lalu membandingkan sudut | Status: "+mark(val("unStrategy")==="kesamaan_sudut")+"\n"+
 "Alasan/langkah siswa: "+(val("unReason")||"(belum diisi)")+"\n\n"+
-"F. REFLEKSI SISWA
-"+
+"F. REFLEKSI SISWA\n"+
 "Bagian paling membingungkan: "+(val("confuse")||"Tidak ada")+"\n"+
 "Keyakinan akhir siswa: "+el("overallConfidence").options[el("overallConfidence").selectedIndex].text+"\n"+
 "Refleksi siswa: "+(val("reflection")||"(belum diisi)")+"\n\n"+
@@ -674,18 +673,47 @@ function generateAll() {
   el("noteOutput").innerText=aiReadyNote();
 }
 function downloadOutput() {
-  generateAll();
-  var text=el("noteOutput").innerText;
-  var blob=new Blob([text],{type:"text/plain;charset=utf-8"});
-  var a=document.createElement("a");
-  a.href=URL.createObjectURL(blob);
-  var safeName=(val("studentName")||"Siswa").replace(/[^a-zA-Z0-9_-]/g,"_");
-  a.download="Catatan_DayaMath_"+safeName+".txt";
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  var msg=el("studentMessage");
-  if(msg){ msg.style.display="block"; }
+  try {
+    generateAll();
+    var output=el("noteOutput");
+    var text=output ? (output.innerText || output.textContent || "") : "";
+    if(!text) { text=aiReadyNote(); }
+
+    // Tambahkan BOM agar file .txt terbaca rapi di Windows/HP.
+    var blob=new Blob(["\ufeff"+text],{type:"text/plain;charset=utf-8"});
+    var url=URL.createObjectURL(blob);
+    var safeName=(val("studentName")||"Siswa").replace(/[^a-zA-Z0-9_-]/g,"_");
+    var fileName="Catatan_DayaMath_"+safeName+".txt";
+
+    var a=document.createElement("a");
+    a.href=url;
+    a.download=fileName;
+    a.style.display="none";
+    document.body.appendChild(a);
+
+    // Klik otomatis harus terjadi langsung dari tombol siswa.
+    if(typeof a.click === "function") { a.click(); }
+
+    var msg=el("studentMessage");
+    if(msg){
+      msg.style.display="block";
+      msg.innerHTML='File catatan untuk guru sudah dibuat. Jika unduhan tidak muncul otomatis, <a id="manualDownloadLink" href="'+url+'" download="'+fileName+'">klik di sini untuk mengunduh manual</a>.';
+    }
+
+    // Jangan langsung mencabut URL karena tautan manual masih memakainya.
+    setTimeout(function(){
+      if(a.parentNode) { a.parentNode.removeChild(a); }
+    },500);
+  } catch(err) {
+    var msg=el("studentMessage");
+    if(msg){
+      msg.style.display="block";
+      msg.innerHTML="Maaf, file belum bisa diunduh otomatis. Catatan sudah dibuat di kotak teks bawah; silakan salin manual.";
+    }
+    var output=el("noteOutput");
+    if(output){ output.style.display="block"; }
+    console.error(err);
+  }
 }
 </script>
 </body>
